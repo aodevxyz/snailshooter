@@ -7,26 +7,43 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="ui">
+    <div id="start-screen">
+        <h1>Ugráló Kocka vs Csigák</h1>
+        <p>A fast-paced 3D shooter by autistic people :3</p>
+        <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+        <button id="startButton">Start Game</button>
+        <div id="high-score-display">High Score: 0</div>
+    </div>
+
+    <div id="ui" style="display: none;">
+        <div class="stat">👤 <span id="playerNameUI">Player</span></div>
         <div class="stat">❤️ Élet: <span id="health">100</span></div>
         <div class="stat">💀 Ölések: <span id="kills">0</span></div>
         <div class="stat">⏱️ Idő: <span id="time">0</span>s</div>
         <div class="stat">⚡ Dash: <span id="dash">READY</span></div>
     </div>
-    <div id="powerUp">
+
+    <div id="powerUp" style="display: none;">
         ⚡ SPEED BOOST ACTIVE! ⚡
     </div>
-    <div id="shieldUp">
+    <div id="shieldUp" style="display: none;">
         🛡️ SHIELD ACTIVE! 🛡️
     </div>
-    <div id="controls">
+     <div id="superPowerUp" style="display: none;">
+        ☢️ SUPER POWER ACTIVE! ☢️
+    </div>
+
+    <div id="controls" style="display: none;">
         🎮 WASD - Mozgás | SHIFT - Dash | SPACE - Super Jump | EGÉR - Célzás | BAL KLIKK - Lövés
     </div>
+
     <div id="gameOver">
         <h1>GAME OVER</h1>
         <p id="finalScore"></p>
+        <p id="highScore-gameover"></p>
         <p style="color: #aaa; font-size: 16px;">F5 - Újraindítás</p>
     </div>
+
     <canvas id="gameCanvas"></canvas>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
