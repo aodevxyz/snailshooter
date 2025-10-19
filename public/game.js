@@ -26,7 +26,7 @@ const game = {
 
 // Start Screen Event Listener
 window.addEventListener('load', () => {
-    loadHighScore();
+    loadGameStats();
     document.getElementById('high-score-display').textContent = `High Score: ${game.highScore}`;
 
     const startButton = document.getElementById('startButton');
@@ -42,19 +42,20 @@ window.addEventListener('load', () => {
     });
 });
 
-
-function loadHighScore() {
-    const score = localStorage.getItem('snailShooterHighScore');
-    if (score) {
-        game.highScore = parseInt(score, 10);
+function loadGameStats() {
+    const stats = JSON.parse(localStorage.getItem('snailShooterStats'));
+    if (stats) {
+        game.highScore = stats.highScore || 0;
+        // We can add more stats to load here in the future
     }
 }
 
-function saveHighScore() {
-    if (game.score > game.highScore) {
-        game.highScore = game.score;
-        localStorage.setItem('snailShooterHighScore', game.highScore);
-    }
+function saveGameStats() {
+    const stats = {
+        highScore: Math.max(game.score, game.highScore),
+        // We can add more stats to save here in the future
+    };
+    localStorage.setItem('snailShooterStats', JSON.stringify(stats));
 }
 
 
@@ -100,8 +101,8 @@ function init() {
     }
 
     // Event listeners
-    document.addEventListener('keydown', (e) => game.keys[e.key] = true);
-    document.addEventListener('keyup', (e) => game.keys[e.key] = false);
+    document.addEventListener('keydown', (e) => game.keys[e.key.toLowerCase()] = true);
+    document.addEventListener('keyup', (e) => game.keys[e.key.toLowerCase()] = false);
     
     document.addEventListener('mousemove', (e) => {
         game.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -204,7 +205,7 @@ function spawnPowerUp() {
     const powerUp = new THREE.Group();
     let type;
     const rand = Math.random();
-    if (rand < 0.05) { // 5% chance for Super Power-up
+    if (rand < 0.1) { 
         type = 'super';
     } else if (rand < 0.5) {
         type = 'speed';
@@ -234,9 +235,10 @@ function shootBullet() {
         new THREE.MeshLambertMaterial({ color: 0xFFD700, emissive: 0xFFD700, emissiveIntensity: 0.8 })
     );
 
-    let direction = player.getWorldDirection(new THREE.Vector3());
+    let direction = new THREE.Vector3();
+    camera.getWorldDirection(direction);
 
-    // AIM ASSIST
+    // AIM ASSIST with super power-up
     if (game.superPowerUpTime > 0) {
         let closestEnemy = null;
         let minDistance = Infinity;
@@ -256,7 +258,7 @@ function shootBullet() {
     bullet.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), direction);
 
     bullet.userData = {
-        velocity: direction.multiplyScalar(1.5),
+        velocity: direction.multiplyScalar(2.5),
         life: 80
     };
 
@@ -285,23 +287,23 @@ function updatePlayer() {
     if (game.isGameOver) return;
 
     // -- ROTATION --
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -player.position.y);
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(game.mouse, camera);
-    const intersect = new THREE.Vector3();
-    if(raycaster.ray.intersectPlane(plane, intersect)) {
-        player.lookAt(intersect);
-    }
+    player.rotation.y -= game.mouse.x * 0.05; // Simplified rotation, will be improved
 
     // -- MOVEMENT --
-    let moveDirection = new THREE.Vector3(0,0,0);
-    if (game.keys['w'] || game.keys['W']) moveDirection.z += 1;
-    if (game.keys['s'] || game.keys['S']) moveDirection.z -= 1;
-    if (game.keys['a'] || game.keys['A']) moveDirection.x += 1;
-    if (game.keys['d'] || game.keys['D']) moveDirection.x -= 1;
+    const moveDirection = new THREE.Vector3();
+    const right = new THREE.Vector3();
+    const forward = new THREE.Vector3();
+
+    camera.getWorldDirection(forward);
+    right.copy(forward).cross(camera.up);
+
+    if (game.keys['w']) moveDirection.add(forward);
+    if (game.keys['s']) moveDirection.sub(forward);
+    if (game.keys['a']) moveDirection.sub(right);
+    if (game.keys['d']) moveDirection.add(right);
     
-    const isDashing = game.keys['Shift'] && player.userData.dashCooldown === 0;
-    let speed = isDashing ? 0.6 : 0.3;
+    const isDashing = game.keys['shift'] && player.userData.dashCooldown === 0;
+    let speed = isDashing ? 0.8 : 0.3;
 
     // -- POWER-UPS --
     if (game.speedBoostTime > 0) { speed *= 1.8; game.speedBoostTime--; document.getElementById('powerUp').style.display = 'block'; } 
@@ -329,8 +331,7 @@ function updatePlayer() {
 
 
     if (moveDirection.length() > 0.01) {
-        moveDirection.normalize().multiplyScalar(speed);
-        player.position.add(moveDirection);
+        player.position.add(moveDirection.normalize().multiplyScalar(speed));
     }
     
     if (isDashing) {
@@ -348,13 +349,16 @@ function updatePlayer() {
     if (player.userData.shootCooldown > 0) player.userData.shootCooldown--;
     if (game.mouse.down && player.userData.shootCooldown === 0) {
         shootBullet();
-        player.userData.shootCooldown = game.superPowerUpTime > 0 ? 2 : 7; // Faster shooting with super power-up
+        player.userData.shootCooldown = game.superPowerUpTime > 0 ? 3 : 10;
     }
 
-    // Camera follow
-    const cameraOffset = new THREE.Vector3(0, 18, 12);
-    camera.position.lerp(player.position.clone().add(cameraOffset), 0.05);
-    camera.lookAt(player.position);
+    // Camera follow (Over-the-shoulder)
+    const cameraOffset = new THREE.Vector3(0, 5, -8);
+    const cameraLookAt = new THREE.Vector3(0, 2, 0);
+
+    let cameraPosition = player.position.clone().add(cameraOffset.applyMatrix4(player.matrixWorld));
+    camera.position.lerp(cameraPosition, 0.1);
+    camera.lookAt(player.position.clone().add(cameraLookAt));
 }
 
 function updateEnemies() {
@@ -364,7 +368,7 @@ function updateEnemies() {
         const direction = player.position.clone().sub(enemy.position);
         const dist = direction.length();
         
-        if (dist > 0 && dist < 50) { // Only move if player is within range
+        if (dist > 0 && dist < 50) {
             direction.normalize();
             enemy.position.add(direction.multiplyScalar(enemy.userData.speed));
             enemy.lookAt(player.position);
@@ -390,7 +394,7 @@ function updateEnemies() {
                     enemies.splice(i, 1);
                     game.score++;
                     createParticle(enemy.position, 0x8B4513, 20);
-                    if (Math.random() < 0.25) { // Higher chance for power-up
+                    if (Math.random() < 0.3) { 
                         spawnPowerUp();
                     }
                 } else {
@@ -461,7 +465,7 @@ function updateUI() {
 
     if (game.playerHealth <= 0 && !game.isGameOver) {
         game.isGameOver = true;
-        saveHighScore();
+        saveGameStats();
         document.getElementById('gameOver').style.display = 'block';
         document.getElementById('finalScore').textContent = `${game.playerName}, you killed ${game.score} snails!`;
         document.getElementById('highScore-gameover').textContent = `Your High Score: ${game.highScore}`;
