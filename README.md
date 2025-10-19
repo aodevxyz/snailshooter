@@ -1,1 +1,1 @@
-this is a snail game by austists :3
+this is a snail game by autistic people :3
