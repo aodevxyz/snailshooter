@@ -75,8 +75,8 @@ function init() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-    scene.add(ambientLight);
+    const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
+    scene.add(hemisphereLight);
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
     directionalLight.position.set(25, 50, 25);
