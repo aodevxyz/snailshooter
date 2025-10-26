@@ -1,3 +1,4 @@
+
 body {
     margin: 0;
     padding: 0;
@@ -62,11 +63,10 @@ body {
     font-size: 24px;
     margin: 10px 0;
 }
-#powerUp {
+#powerUp, #shieldUp, #superPowerUp {
     position: absolute;
     top: 80px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 20px;
     background: rgba(255, 215, 0, 0.8);
     padding: 10px 20px;
     border-radius: 5px;
@@ -76,15 +76,12 @@ body {
     z-index: 10;
 }
 #shieldUp {
-    position: absolute;
-    top: 120px; /* Below the other powerup */
-    left: 50%;
-    transform: translateX(-50%);
+    top: 130px;
     background: rgba(0, 191, 255, 0.8);
-    padding: 10px 20px;
-    border-radius: 5px;
     border: 2px solid #00BFFF;
-    font-size: 18px;
-    display: none;
-    z-index: 10;
+}
+#superPowerUp {
+    top: 180px;
+    background: rgba(255, 0, 0, 0.8);
+    border: 2px solid #ff0000;
 }

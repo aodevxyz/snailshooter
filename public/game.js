@@ -6,6 +6,7 @@ const enemies = [];
 const bullets = [];
 const particles = [];
 const powerUps = [];
+const obstacles = [];
 
 const game = {
     keys: {},
@@ -139,6 +140,7 @@ function createGround() {
         obstacle.castShadow = true;
         obstacle.receiveShadow = true;
         scene.add(obstacle);
+        obstacles.push(obstacle);
     }
 }
 
@@ -284,6 +286,8 @@ function createParticle(position, color, count) {
 function updatePlayer() {
     if (game.isGameOver) return;
 
+    const playerBox = new THREE.Box3().setFromObject(player);
+
     // -- ROTATION --
     const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -player.position.y);
     const raycaster = new THREE.Raycaster();
@@ -295,10 +299,11 @@ function updatePlayer() {
 
     // -- MOVEMENT --
     let moveDirection = new THREE.Vector3(0,0,0);
-    if (game.keys['w'] || game.keys['W']) moveDirection.z += 1;
-    if (game.keys['s'] || game.keys['S']) moveDirection.z -= 1;
-    if (game.keys['a'] || game.keys['A']) moveDirection.x += 1;
-    if (game.keys['d'] || game.keys['D']) moveDirection.x -= 1;
+    if (game.keys['w'] || game.keys['W']) {
+        const forward = new THREE.Vector3();
+        player.getWorldDirection(forward);
+        moveDirection.add(forward);
+    }
     
     const isDashing = game.keys['Shift'] && player.userData.dashCooldown === 0;
     let speed = isDashing ? 0.6 : 0.3;
@@ -330,7 +335,22 @@ function updatePlayer() {
 
     if (moveDirection.length() > 0.01) {
         moveDirection.normalize().multiplyScalar(speed);
-        player.position.add(moveDirection);
+        
+        const predictedPosition = player.position.clone().add(moveDirection);
+        const predictedBox = new THREE.Box3().setFromObject(player).translate(moveDirection);
+
+        let collision = false;
+        for (const obstacle of obstacles) {
+            const obstacleBox = new THREE.Box3().setFromObject(obstacle);
+            if (predictedBox.intersectsBox(obstacleBox)) {
+                collision = true;
+                break;
+            }
+        }
+
+        if (!collision) {
+            player.position.add(moveDirection);
+        }
     }
     
     if (isDashing) {
