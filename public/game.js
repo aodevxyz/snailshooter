@@ -128,7 +128,7 @@ function createGround() {
 
     // Add some obstacles
     for (let i = 0; i < 20; i++) {
-        const size = Math.random() * 3 + 1;
+        const size = Math.random() * 4 + 1;
         const geometry = new THREE.BoxGeometry(size, size * 2, size);
         const material = new THREE.MeshLambertMaterial({ color: 0x555555 });
         const obstacle = new THREE.Mesh(geometry, material);
@@ -193,7 +193,7 @@ function spawnEnemy() {
 
     enemy.userData = {
         health: 20,
-        speed: 0.08 + Math.random() * 0.05,
+        speed: 0.06 + Math.random() * 0.04,
         wobblePhase: Math.random() * Math.PI * 2
     };
 
@@ -237,7 +237,6 @@ function shootBullet() {
 
     let direction = player.getWorldDirection(new THREE.Vector3());
 
-    // AIM ASSIST
     if (game.superPowerUpTime > 0) {
         let closestEnemy = null;
         let minDistance = Infinity;
@@ -257,7 +256,7 @@ function shootBullet() {
     bullet.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), direction);
 
     bullet.userData = {
-        velocity: direction.multiplyScalar(1.5),
+        velocity: direction.multiplyScalar(1.8),
         life: 80
     };
 
@@ -286,7 +285,7 @@ function updatePlayer() {
     if (game.isGameOver) return;
 
     // -- ROTATION --
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1);
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(game.mouse, camera);
     const intersect = new THREE.Vector3();
@@ -305,17 +304,17 @@ function updatePlayer() {
     if (game.keys['a']) moveDirection.sub(right);
     if (game.keys['d']) moveDirection.add(right);
 
-    let speed = 0.4;
+    let speed = 0.25;
 
     // -- POWER-UPS --
-    if (game.speedBoostTime > 0) { speed *= 1.8; game.speedBoostTime--; document.getElementById('powerUp').style.display = 'block'; } 
+    if (game.speedBoostTime > 0) { speed *= 1.5; game.speedBoostTime--; document.getElementById('powerUp').style.display = 'block'; } 
     else { document.getElementById('powerUp').style.display = 'none'; }
 
     if (game.shieldBoostTime > 0) { game.shieldBoostTime--; document.getElementById('shieldUp').style.display = 'block'; } 
     else { document.getElementById('shieldUp').style.display = 'none'; }
     
     if (game.superPowerUpTime > 0) {
-        speed *= 2.5; 
+        speed *= 2.0; 
         game.superPowerUpTime--;
         document.getElementById('superPowerUp').style.display = 'block';
         if (leftEye.material.color.getHex() !== 0xff0000) {
@@ -336,23 +335,34 @@ function updatePlayer() {
         player.userData.velocity.add(moveDirection);
     }
 
-    player.userData.velocity.multiplyScalar(0.92); // Damping
+    player.userData.velocity.multiplyScalar(0.88); 
 
-    const predictedPosition = player.position.clone().add(player.userData.velocity);
-    const predictedBox = new THREE.Box3().setFromObject(player).translate(player.userData.velocity);
+    // -- COLLISION --
+    const playerBox = new THREE.Box3().setFromObject(player);
+    const playerNextPos = player.position.clone().add(player.userData.velocity);
+    const playerNextBox = playerBox.clone().translate(player.userData.velocity);
     
-    let collision = false;
     for (const obstacle of obstacles) {
         const obstacleBox = new THREE.Box3().setFromObject(obstacle);
-        if (predictedBox.intersectsBox(obstacleBox)) {
-            collision = true;
+        if (playerNextBox.intersectsBox(obstacleBox)) {
+            const penetration = new THREE.Vector3();
+            const closestPoint = obstacleBox.clampPoint(playerNextPos, new THREE.Vector3());
+            penetration.subVectors(playerNextPos, closestPoint);
+
+            const overlap = playerNextBox.getCenter(new THREE.Vector3()).distanceTo(obstacleBox.getCenter(new THREE.Vector3())) - (playerNextBox.getSize(new THREE.Vector3()).x / 2 + obstacleBox.getSize(new THREE.Vector3()).x / 2)
+            
+            if (Math.abs(penetration.x) < Math.abs(penetration.z)) {
+                player.userData.velocity.x = 0;
+            } else {
+                player.userData.velocity.z = 0;
+            }
             break;
         }
     }
 
-    if (!collision) {
-        player.position.add(player.userData.velocity);
-    }
+    player.position.add(player.userData.velocity);
+    if(player.position.y < 1) player.position.y = 1;
+
 
     const maxDist = 48;
     player.position.x = Math.max(-maxDist, Math.min(maxDist, player.position.x));
@@ -362,12 +372,12 @@ function updatePlayer() {
     if (player.userData.shootCooldown > 0) player.userData.shootCooldown--;
     if (game.mouse.down && player.userData.shootCooldown === 0) {
         shootBullet();
-        player.userData.shootCooldown = game.superPowerUpTime > 0 ? 1 : 5;
+        player.userData.shootCooldown = game.superPowerUpTime > 0 ? 3 : 10;
     }
 
     // Camera follow
-    const cameraOffset = new THREE.Vector3(0, 18, 12);
-    camera.position.lerp(player.position.clone().add(cameraOffset), 0.08);
+    const cameraOffset = new THREE.Vector3(0, 20, 14);
+    camera.position.lerp(player.position.clone().add(cameraOffset), 0.09);
     camera.lookAt(player.position);
 }
 
@@ -378,24 +388,24 @@ function updateEnemies() {
         const direction = player.position.clone().sub(enemy.position);
         const dist = direction.length();
         
-        if (dist > 0 && dist < 50) { 
+        if (dist > 0 && dist < 55) { 
             direction.normalize();
-            enemy.position.add(direction.multiplyScalar(enemy.userData.speed));
+            enemy.position.add(direction.multiplyScalar(enemy.userData..speed));
             enemy.lookAt(player.position);
         }
 
         enemy.userData.wobblePhase += 0.1;
         enemy.position.y = 0.75 + Math.sin(enemy.userData.wobblePhase) * 0.2;
 
-        if (dist < 1.5 && game.shieldBoostTime <= 0) {
-            game.playerHealth -= 2;
-            createParticle(player.position, 0xff0000, 5);
+        if (dist < 1.8 && game.shieldBoostTime <= 0) {
+            game.playerHealth -= 3;
+            createParticle(player.position, 0xff0000, 8);
         }
 
         for (let j = bullets.length - 1; j >= 0; j--) {
             const bullet = bullets[j];
             if(bullet.position.distanceTo(enemy.position) < 1.5) {
-                enemy.userData.health -= 20;
+                enemy.userData.health -= 25;
                 scene.remove(bullet);
                 bullets.splice(j, 1);
 
@@ -404,7 +414,7 @@ function updateEnemies() {
                     enemies.splice(i, 1);
                     game.score++;
                     createParticle(enemy.position, 0x8B4513, 20);
-                    if (Math.random() < 0.25) {
+                    if (Math.random() < 0.3) {
                         spawnPowerUp();
                     }
                 } else {
@@ -415,7 +425,7 @@ function updateEnemies() {
         }
     }
 
-    if (Date.now() - game.lastEnemySpawn > 800 && enemies.length < 30) {
+    if (Date.now() - game.lastEnemySpawn > 600 && enemies.length < 35) {
         spawnEnemy();
         game.lastEnemySpawn = Date.now();
     }
