@@ -101,8 +101,8 @@ function init() {
     }
 
     // Event listeners
-    document.addEventListener('keydown', (e) => game.keys[e.key] = true);
-    document.addEventListener('keyup', (e) => game.keys[e.key] = false);
+    document.addEventListener('keydown', (e) => game.keys[e.key.toLowerCase()] = true);
+    document.addEventListener('keyup', (e) => game.keys[e.key.toLowerCase()] = false);
     
     document.addEventListener('mousemove', (e) => {
         game.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -286,10 +286,8 @@ function createParticle(position, color, count) {
 function updatePlayer() {
     if (game.isGameOver) return;
 
-    const playerBox = new THREE.Box3().setFromObject(player);
-
     // -- ROTATION --
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -player.position.y);
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(game.mouse, camera);
     const intersect = new THREE.Vector3();
@@ -298,15 +296,18 @@ function updatePlayer() {
     }
 
     // -- MOVEMENT --
-    let moveDirection = new THREE.Vector3(0,0,0);
-    if (game.keys['w'] || game.keys['W']) {
-        const forward = new THREE.Vector3();
-        player.getWorldDirection(forward);
-        moveDirection.add(forward);
-    }
-    
-    const isDashing = game.keys['Shift'] && player.userData.dashCooldown === 0;
-    let speed = isDashing ? 0.6 : 0.3;
+    const moveDirection = new THREE.Vector3(0,0,0);
+    const forward = new THREE.Vector3();
+    player.getWorldDirection(forward);
+    const right = new THREE.Vector3().crossVectors(camera.up, forward).normalize();
+
+    if (game.keys['w']) moveDirection.add(forward);
+    if (game.keys['s']) moveDirection.sub(forward);
+    if (game.keys['a']) moveDirection.sub(right);
+    if (game.keys['d']) moveDirection.add(right);
+
+    const isDashing = game.keys['shift'] && player.userData.dashCooldown === 0;
+    let speed = isDashing ? 0.8 : 0.4;
 
     // -- POWER-UPS --
     if (game.speedBoostTime > 0) { speed *= 1.8; game.speedBoostTime--; document.getElementById('powerUp').style.display = 'block'; } 
@@ -332,25 +333,27 @@ function updatePlayer() {
         }
     }
 
-
     if (moveDirection.length() > 0.01) {
         moveDirection.normalize().multiplyScalar(speed);
-        
-        const predictedPosition = player.position.clone().add(moveDirection);
-        const predictedBox = new THREE.Box3().setFromObject(player).translate(moveDirection);
+        player.userData.velocity.add(moveDirection);
+    }
 
-        let collision = false;
-        for (const obstacle of obstacles) {
-            const obstacleBox = new THREE.Box3().setFromObject(obstacle);
-            if (predictedBox.intersectsBox(obstacleBox)) {
-                collision = true;
-                break;
-            }
-        }
+    player.userData.velocity.multiplyScalar(0.92); // Damping
 
-        if (!collision) {
-            player.position.add(moveDirection);
+    const predictedPosition = player.position.clone().add(player.userData.velocity);
+    const predictedBox = new THREE.Box3().setFromObject(player).translate(player.userData.velocity);
+    
+    let collision = false;
+    for (const obstacle of obstacles) {
+        const obstacleBox = new THREE.Box3().setFromObject(obstacle);
+        if (predictedBox.intersectsBox(obstacleBox)) {
+            collision = true;
+            break;
         }
+    }
+
+    if (!collision) {
+        player.position.add(player.userData.velocity);
     }
     
     if (isDashing) {
@@ -358,7 +361,6 @@ function updatePlayer() {
         createParticle(player.position, 0x00beef, 10);
     }
     if (player.userData.dashCooldown > 0) player.userData.dashCooldown--;
-
 
     const maxDist = 48;
     player.position.x = Math.max(-maxDist, Math.min(maxDist, player.position.x));
@@ -368,12 +370,12 @@ function updatePlayer() {
     if (player.userData.shootCooldown > 0) player.userData.shootCooldown--;
     if (game.mouse.down && player.userData.shootCooldown === 0) {
         shootBullet();
-        player.userData.shootCooldown = game.superPowerUpTime > 0 ? 2 : 7; // Faster shooting with super power-up
+        player.userData.shootCooldown = game.superPowerUpTime > 0 ? 2 : 7;
     }
 
     // Camera follow
     const cameraOffset = new THREE.Vector3(0, 18, 12);
-    camera.position.lerp(player.position.clone().add(cameraOffset), 0.05);
+    camera.position.lerp(player.position.clone().add(cameraOffset), 0.08);
     camera.lookAt(player.position);
 }
 
@@ -384,7 +386,7 @@ function updateEnemies() {
         const direction = player.position.clone().sub(enemy.position);
         const dist = direction.length();
         
-        if (dist > 0 && dist < 50) { // Only move if player is within range
+        if (dist > 0 && dist < 50) { 
             direction.normalize();
             enemy.position.add(direction.multiplyScalar(enemy.userData.speed));
             enemy.lookAt(player.position);
@@ -410,7 +412,7 @@ function updateEnemies() {
                     enemies.splice(i, 1);
                     game.score++;
                     createParticle(enemy.position, 0x8B4513, 20);
-                    if (Math.random() < 0.25) { // Higher chance for power-up
+                    if (Math.random() < 0.25) {
                         spawnPowerUp();
                     }
                 } else {
