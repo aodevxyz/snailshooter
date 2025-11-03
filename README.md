@@ -12,12 +12,11 @@ This is a fun and fast-paced 3D shooter game where you play as a snail and fight
 
 ## Controls
 
-- **Movement:** Press the 'W' key to move your snail in the direction of the mouse pointer.
-- **Dash:** Press the 'Shift' key to dash and get a burst of speed.
+- **Movement:** Press the `W`, `A`, `S`, and `D` keys to move your snail.
 - **Shooting:** Click the left mouse button to shoot.
 
 ## Power-ups
 
 - **Speed Boost:** Increases your movement speed.
 - **Shield:** Protects you from enemy attacks.
-- **Super Power-up:** Increases your speed and firing rate, and enables aim assist.
+- **Super Power-up:** Greatly increases your speed and firing rate, and enables aim assist.

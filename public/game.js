@@ -167,7 +167,6 @@ function createPlayer() {
     player.userData = {
         velocity: new THREE.Vector3(),
         shootCooldown: 0,
-        dashCooldown: 0,
     };
     
     scene.add(player);
@@ -206,7 +205,7 @@ function spawnPowerUp() {
     const powerUp = new THREE.Group();
     let type;
     const rand = Math.random();
-    if (rand < 0.05) { // 5% chance for Super Power-up
+    if (rand < 0.15) { // 15% chance for Super Power-up
         type = 'super';
     } else if (rand < 0.5) {
         type = 'speed';
@@ -306,8 +305,7 @@ function updatePlayer() {
     if (game.keys['a']) moveDirection.sub(right);
     if (game.keys['d']) moveDirection.add(right);
 
-    const isDashing = game.keys['shift'] && player.userData.dashCooldown === 0;
-    let speed = isDashing ? 0.8 : 0.4;
+    let speed = 0.4;
 
     // -- POWER-UPS --
     if (game.speedBoostTime > 0) { speed *= 1.8; game.speedBoostTime--; document.getElementById('powerUp').style.display = 'block'; } 
@@ -355,12 +353,6 @@ function updatePlayer() {
     if (!collision) {
         player.position.add(player.userData.velocity);
     }
-    
-    if (isDashing) {
-        player.userData.dashCooldown = 40;
-        createParticle(player.position, 0x00beef, 10);
-    }
-    if (player.userData.dashCooldown > 0) player.userData.dashCooldown--;
 
     const maxDist = 48;
     player.position.x = Math.max(-maxDist, Math.min(maxDist, player.position.x));
@@ -370,7 +362,7 @@ function updatePlayer() {
     if (player.userData.shootCooldown > 0) player.userData.shootCooldown--;
     if (game.mouse.down && player.userData.shootCooldown === 0) {
         shootBullet();
-        player.userData.shootCooldown = game.superPowerUpTime > 0 ? 2 : 7;
+        player.userData.shootCooldown = game.superPowerUpTime > 0 ? 1 : 5;
     }
 
     // Camera follow
@@ -479,7 +471,6 @@ function updateUI() {
     document.getElementById('health').textContent = Math.max(0, Math.floor(game.playerHealth));
     document.getElementById('kills').textContent = game.score;
     document.getElementById('time').textContent = Math.floor((Date.now() - game.lastTime) / 1000);
-    document.getElementById('dash').textContent = player.userData.dashCooldown > 0 ? Math.ceil(player.userData.dashCooldown / 10) : "READY";
 
     if (game.playerHealth <= 0 && !game.isGameOver) {
         game.isGameOver = true;
