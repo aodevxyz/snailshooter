@@ -304,7 +304,7 @@ function updatePlayer() {
     if (game.keys['a']) moveDirection.sub(right);
     if (game.keys['d']) moveDirection.add(right);
 
-    let speed = 0.25;
+    let speed = 0.2;
 
     // -- POWER-UPS --
     if (game.speedBoostTime > 0) { speed *= 1.5; game.speedBoostTime--; document.getElementById('powerUp').style.display = 'block'; } 
