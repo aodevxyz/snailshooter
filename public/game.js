@@ -390,7 +390,7 @@ function updateEnemies() {
         
         if (dist > 0 && dist < 55) { 
             direction.normalize();
-            enemy.position.add(direction.multiplyScalar(enemy.userData..speed));
+            enemy.position.add(direction.multiplyScalar(enemy.userData.speed));
             enemy.lookAt(player.position);
         }
 
