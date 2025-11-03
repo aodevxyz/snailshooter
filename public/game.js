@@ -193,7 +193,7 @@ function spawnEnemy() {
     enemy.position.set(Math.cos(angle) * distance, 0.75, Math.sin(angle) * distance);
 
     enemy.userData = {
-        health: 30,
+        health: 20,
         speed: 0.06 + Math.random() * 0.04,
         wobblePhase: Math.random() * Math.PI * 2
     };
@@ -316,7 +316,7 @@ function updatePlayer() {
     if (game.keys['a']) moveDirection.sub(right);
     if (game.keys['d']) moveDirection.add(right);
 
-    let speed = 0.09;
+    let speed = 0.07;
 
     // -- POWER-UPS --
     if (game.speedBoostTime > 0) { speed *= 1.5; game.speedBoostTime--; document.getElementById('powerUp').style.display = 'block'; } 
@@ -403,22 +403,22 @@ function updateEnemies() {
         
         if (dist > 0 && dist < 55) { 
             direction.normalize().add(new THREE.Vector3(Math.random() * 0.4 - 0.2, 0, Math.random() * 0.4 - 0.2));
-            enemy.position.add(direction.multiplyScalar(enemy.userData..speed));
+            enemy.position.add(direction.multiplyScalar(enemy.userData.speed));
             enemy.lookAt(player.position);
         }
 
         enemy.userData.wobblePhase += 0.1;
         enemy.position.y = 0.75 + Math.sin(enemy.userData.wobblePhase) * 0.2;
 
-        if (dist < 1.0 && game.shieldBoostTime <= 0) {
-            game.playerHealth -= 1;
+        if (dist < 1.5 && game.shieldBoostTime <= 0) {
+            game.playerHealth -= 2;
             createParticle(player.position, 0xff0000, 8);
         }
 
         for (let j = bullets.length - 1; j >= 0; j--) {
             const bullet = bullets[j];
-            if(bullet.position.distanceTo(enemy.position) < 1.0) {
-                enemy.userData.health -= 10;
+            if(bullet.position.distanceTo(enemy.position) < 1.5) {
+                enemy.userData.health -= 20;
                 scene.remove(bullet);
                 bullets.splice(j, 1);
 
