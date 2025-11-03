@@ -284,12 +284,12 @@ function createParticle(position, color, count) {
 function updatePlayer() {
     if (game.isGameOver) return;
 
-    // -- ROTATION --
     const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1);
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(game.mouse, camera);
     const intersect = new THREE.Vector3();
-    if(raycaster.ray.intersectPlane(plane, intersect)) {
+
+    if (game.keys['w'] && raycaster.ray.intersectPlane(plane, intersect)) {
         player.lookAt(intersect);
     }
 
@@ -376,8 +376,8 @@ function updatePlayer() {
     }
 
     // Camera follow
-    const cameraOffset = new THREE.Vector3(0, 20, 14);
-    camera.position.lerp(player.position.clone().add(cameraOffset), 0.09);
+    const cameraOffset = new THREE.Vector3(0, 15, 10);
+    camera.position.lerp(player.position.clone().add(cameraOffset), 0.1);
     camera.lookAt(player.position);
 }
 
