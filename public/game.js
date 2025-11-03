@@ -22,7 +22,8 @@ const game = {
     superPowerUpTime: 0, // Super power-up
     lastEnemySpawn: 0,
     playerName: "Player",
-    highScore: 0
+    highScore: 0,
+    playerHitFlashTime: 0
 };
 
 // Start Screen Event Listener
@@ -177,7 +178,7 @@ function spawnEnemy() {
     const shellColors = [0x8B4513, 0x654321, 0x5a3a1a];
     for (let i = 0; i < 3; i++) {
         const size = 1.5 - i * 0.3;
-        const shellGeo = new THREE.BoxGeometry(size, size, size);
+        const shellGeo = new THREE.BoxGeometry(.2, .2, .2);
         const shellMat = new THREE.MeshLambertMaterial({ color: shellColors[i] });
         const shellPart = new THREE.Mesh(shellGeo, shellMat);
         shellPart.position.set(-i * 0.2, i * 0.2, 0);
@@ -220,9 +221,13 @@ function spawnPowerUp() {
     const core = new THREE.Mesh(coreGeo, coreMat);
     powerUp.add(core);
 
-    const angle = Math.random() * Math.PI * 2;
-    const distance = 25;
-    powerUp.position.set(Math.cos(angle) * distance, 1, Math.sin(angle) * distance);
+    const groundSize = 100;
+    powerUp.position.set(
+        (Math.random() - 0.5) * groundSize,
+        1,
+        (Math.random() - 0.5) * groundSize
+    );
+
     powerUp.userData = { type, rotation: 0 };
     powerUps.push(powerUp);
     scene.add(powerUp);
@@ -284,6 +289,13 @@ function createParticle(position, color, count) {
 function updatePlayer() {
     if (game.isGameOver) return;
 
+    if (game.playerHitFlashTime > 0) {
+        game.playerHitFlashTime--;
+        player.children[0].material.color.set(0xff0000);
+    } else {
+        player.children[0].material.color.set(0x00beef);
+    }
+
     const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1);
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(game.mouse, camera);
@@ -304,7 +316,7 @@ function updatePlayer() {
     if (game.keys['a']) moveDirection.sub(right);
     if (game.keys['d']) moveDirection.add(right);
 
-    let speed = 0.2;
+    let speed = 0.07;
 
     // -- POWER-UPS --
     if (game.speedBoostTime > 0) { speed *= 1.5; game.speedBoostTime--; document.getElementById('powerUp').style.display = 'block'; } 
@@ -345,6 +357,7 @@ function updatePlayer() {
     for (const obstacle of obstacles) {
         const obstacleBox = new THREE.Box3().setFromObject(obstacle);
         if (playerNextBox.intersectsBox(obstacleBox)) {
+            game.playerHitFlashTime = 10;
             const penetration = new THREE.Vector3();
             const closestPoint = obstacleBox.clampPoint(playerNextPos, new THREE.Vector3());
             penetration.subVectors(playerNextPos, closestPoint);
@@ -389,7 +402,7 @@ function updateEnemies() {
         const dist = direction.length();
         
         if (dist > 0 && dist < 55) { 
-            direction.normalize();
+            direction.normalize().add(new THREE.Vector3(Math.random() * 0.4 - 0.2, 0, Math.random() * 0.4 - 0.2));
             enemy.position.add(direction.multiplyScalar(enemy.userData.speed));
             enemy.lookAt(player.position);
         }
@@ -425,7 +438,7 @@ function updateEnemies() {
         }
     }
 
-    if (Date.now() - game.lastEnemySpawn > 600 && enemies.length < 35) {
+    if (Date.now() - game.lastEnemySpawn > 800 && enemies.length < 30) {
         spawnEnemy();
         game.lastEnemySpawn = Date.now();
     }
