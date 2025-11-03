@@ -178,7 +178,7 @@ function spawnEnemy() {
     const shellColors = [0x8B4513, 0x654321, 0x5a3a1a];
     for (let i = 0; i < 3; i++) {
         const size = 1.5 - i * 0.3;
-        const shellGeo = new THREE.BoxGeometry(.2, .2, .2);
+        const shellGeo = new THREE.BoxGeometry(size, size, size);
         const shellMat = new THREE.MeshLambertMaterial({ color: shellColors[i] });
         const shellPart = new THREE.Mesh(shellGeo, shellMat);
         shellPart.position.set(-i * 0.2, i * 0.2, 0);
@@ -193,7 +193,7 @@ function spawnEnemy() {
     enemy.position.set(Math.cos(angle) * distance, 0.75, Math.sin(angle) * distance);
 
     enemy.userData = {
-        health: 20,
+        health: 30,
         speed: 0.06 + Math.random() * 0.04,
         wobblePhase: Math.random() * Math.PI * 2
     };
@@ -301,7 +301,7 @@ function updatePlayer() {
     raycaster.setFromCamera(game.mouse, camera);
     const intersect = new THREE.Vector3();
 
-    if (game.keys['w'] && raycaster.ray.intersectPlane(plane, intersect)) {
+    if (raycaster.ray.intersectPlane(plane, intersect)) {
         player.lookAt(intersect);
     }
 
@@ -316,7 +316,7 @@ function updatePlayer() {
     if (game.keys['a']) moveDirection.sub(right);
     if (game.keys['d']) moveDirection.add(right);
 
-    let speed = 0.07;
+    let speed = 0.09;
 
     // -- POWER-UPS --
     if (game.speedBoostTime > 0) { speed *= 1.5; game.speedBoostTime--; document.getElementById('powerUp').style.display = 'block'; } 
@@ -403,22 +403,22 @@ function updateEnemies() {
         
         if (dist > 0 && dist < 55) { 
             direction.normalize().add(new THREE.Vector3(Math.random() * 0.4 - 0.2, 0, Math.random() * 0.4 - 0.2));
-            enemy.position.add(direction.multiplyScalar(enemy.userData.speed));
+            enemy.position.add(direction.multiplyScalar(enemy.userData..speed));
             enemy.lookAt(player.position);
         }
 
         enemy.userData.wobblePhase += 0.1;
         enemy.position.y = 0.75 + Math.sin(enemy.userData.wobblePhase) * 0.2;
 
-        if (dist < 1.8 && game.shieldBoostTime <= 0) {
-            game.playerHealth -= 3;
+        if (dist < 1.0 && game.shieldBoostTime <= 0) {
+            game.playerHealth -= 1;
             createParticle(player.position, 0xff0000, 8);
         }
 
         for (let j = bullets.length - 1; j >= 0; j--) {
             const bullet = bullets[j];
-            if(bullet.position.distanceTo(enemy.position) < 1.5) {
-                enemy.userData.health -= 25;
+            if(bullet.position.distanceTo(enemy.position) < 1.0) {
+                enemy.userData.health -= 10;
                 scene.remove(bullet);
                 bullets.splice(j, 1);
 
